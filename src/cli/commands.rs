@@ -19,7 +19,13 @@ EXIT CODES:
 
 UNBLOCK RULES:
   Only `done` unblocks dependents. `cancelled`/`skipped` do NOT.
-  If a predecessor is cancelled, its dependents stay blocked (manual intervention needed)."
+  If a predecessor is cancelled, its dependents stay blocked (manual intervention needed).
+
+BEHAVIOR NOTES:
+  `task fail` may return `blocked` (not `ready`) if deps were cancelled while in_progress.
+  `task add --after <done-task>` starts as `ready` (dep already satisfied).
+  `plan delete` of the active plan clears the active plan config.
+  Terminal states (`done`/`cancelled`/`skipped`) are immutable."
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -104,7 +110,7 @@ NOTE:
   Atomic: all-or-nothing. Validates cycles, duplicate IDs, unknown refs.
   Plan name must be unique. Existing name → error (no overwrite).
   Tasks without `after` start as `ready`; with `after` start as `blocked`.
-  Auto-activates the plan if no plan is currently active.")]
+  Auto-activates if no valid active plan exists (none set, or stale reference).")]
     Load,
 }
 
@@ -139,7 +145,7 @@ pub enum TaskCommands {
     Done {
         id: String,
     },
-    /// Fail a task (in_progress → ready)
+    /// Fail a task (in_progress → ready, or → blocked if deps no longer met)
     Fail {
         id: String,
     },
