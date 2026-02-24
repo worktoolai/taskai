@@ -43,12 +43,16 @@ pub fn progress_json(p: &TaskProgress) -> Value {
 }
 
 pub fn task_summary(t: &Task) -> Value {
-    json!({
+    let mut v = json!({
         "id": t.id,
         "title": t.title,
         "status": t.status.as_str(),
         "priority": t.priority
-    })
+    });
+    if let Some(ref agent) = t.agent {
+        v["agent"] = json!(agent);
+    }
+    v
 }
 
 pub fn task_detail(t: &Task, has_documents: bool) -> Value {
@@ -60,6 +64,9 @@ pub fn task_detail(t: &Task, has_documents: bool) -> Value {
         "priority": t.priority,
         "has_documents": has_documents
     });
+    if let Some(ref agent) = t.agent {
+        v["agent"] = json!(agent);
+    }
     if let Some(ref assigned) = t.assigned_to {
         v["assigned_to"] = json!(assigned);
     }

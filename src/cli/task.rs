@@ -10,8 +10,8 @@ use crate::output;
 
 pub fn run(cmd: TaskCommands, json_output: bool, plan_flag: Option<&str>) -> i32 {
     let result = match cmd {
-        TaskCommands::Add { title, description, priority, after } => {
-            run_add(&title, description.as_deref(), priority, &after, json_output, plan_flag)
+        TaskCommands::Add { title, description, priority, agent, after } => {
+            run_add(&title, description.as_deref(), priority, agent.as_deref(), &after, json_output, plan_flag)
         }
         TaskCommands::List => run_list(json_output, plan_flag),
         TaskCommands::Show { id } => run_show(&id, json_output, plan_flag),
@@ -39,6 +39,7 @@ fn run_add(
     title: &str,
     description: Option<&str>,
     priority: i32,
+    agent: Option<&str>,
     after: &[String],
     json_output: bool,
     plan_flag: Option<&str>,
@@ -70,7 +71,7 @@ fn run_add(
         // Initial status: ready (will be corrected after deps are checked)
         task_repo::create_task(
             &conn, &task_id, &plan_id, title, description, priority,
-            max_order + 1, &TaskStatus::Ready,
+            max_order + 1, &TaskStatus::Ready, agent,
         )?;
 
         for dep_task in &resolved_deps {
@@ -116,6 +117,9 @@ fn run_list(json_output: bool, plan_flag: Option<&str>) -> Result<i32, TaskaiErr
     if json_output {
         let tasks_json: Vec<_> = tasks.iter().map(|t| {
             let mut v = output::json::task_summary(t);
+            if let Some(ref a) = t.agent {
+                v["agent"] = json!(a);
+            }
             if let Some(ref a) = t.assigned_to {
                 v["assigned_to"] = json!(a);
             }
@@ -160,6 +164,7 @@ fn run_show(id: &str, json_output: bool, plan_flag: Option<&str>) -> Result<i32,
                     "status": task.status.as_str(),
                     "priority": task.priority,
                     "sort_order": task.sort_order,
+                    "agent": task.agent,
                     "assigned_to": task.assigned_to,
                     "created_at": task.created_at,
                     "updated_at": task.updated_at,

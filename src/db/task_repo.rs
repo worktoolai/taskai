@@ -12,11 +12,12 @@ pub fn create_task(
     priority: i32,
     sort_order: i32,
     status: &TaskStatus,
+    agent: Option<&str>,
 ) -> Result<Task, TaskaiError> {
     conn.execute(
-        "INSERT INTO tasks (id, plan_id, title, description, priority, sort_order, status)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![id, plan_id, title, description, priority, sort_order, status.as_str()],
+        "INSERT INTO tasks (id, plan_id, title, description, priority, sort_order, status, agent)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        params![id, plan_id, title, description, priority, sort_order, status.as_str(), agent],
     )?;
     get_task_by_id(conn, id)
 }
@@ -24,7 +25,7 @@ pub fn create_task(
 pub fn get_task_by_id(conn: &Connection, id: &str) -> Result<Task, TaskaiError> {
     conn.query_row(
         "SELECT id, plan_id, title, description, status, priority, sort_order,
-                assigned_to, created_at, updated_at, started_at, completed_at
+                agent, assigned_to, created_at, updated_at, started_at, completed_at
          FROM tasks WHERE id = ?1",
         params![id],
         row_to_task,
@@ -47,7 +48,7 @@ pub fn resolve_task(conn: &Connection, plan_id: &str, reference: &str) -> Result
     // ID prefix match within plan
     let mut stmt = conn.prepare(
         "SELECT id, plan_id, title, description, status, priority, sort_order,
-                assigned_to, created_at, updated_at, started_at, completed_at
+                agent, assigned_to, created_at, updated_at, started_at, completed_at
          FROM tasks WHERE plan_id = ?1 AND id LIKE ?2",
     )?;
     let prefix = format!("{reference}%");
@@ -68,7 +69,7 @@ pub fn resolve_task(conn: &Connection, plan_id: &str, reference: &str) -> Result
 pub fn list_tasks_by_plan(conn: &Connection, plan_id: &str) -> Result<Vec<Task>, TaskaiError> {
     let mut stmt = conn.prepare(
         "SELECT id, plan_id, title, description, status, priority, sort_order,
-                assigned_to, created_at, updated_at, started_at, completed_at
+                agent, assigned_to, created_at, updated_at, started_at, completed_at
          FROM tasks WHERE plan_id = ?1 ORDER BY sort_order ASC",
     )?;
     let tasks = stmt
@@ -103,7 +104,7 @@ pub fn update_task_status(
 pub fn next_ready_task(conn: &Connection, plan_id: &str) -> Result<Option<Task>, TaskaiError> {
     let mut stmt = conn.prepare(
         "SELECT id, plan_id, title, description, status, priority, sort_order,
-                assigned_to, created_at, updated_at, started_at, completed_at
+                agent, assigned_to, created_at, updated_at, started_at, completed_at
          FROM tasks
          WHERE plan_id = ?1 AND status = 'ready'
          ORDER BY priority DESC, sort_order ASC
@@ -120,7 +121,7 @@ pub fn next_ready_task(conn: &Connection, plan_id: &str) -> Result<Option<Task>,
 pub fn in_progress_tasks(conn: &Connection, plan_id: &str) -> Result<Vec<Task>, TaskaiError> {
     let mut stmt = conn.prepare(
         "SELECT id, plan_id, title, description, status, priority, sort_order,
-                assigned_to, created_at, updated_at, started_at, completed_at
+                agent, assigned_to, created_at, updated_at, started_at, completed_at
          FROM tasks
          WHERE plan_id = ?1 AND status = 'in_progress'
          ORDER BY started_at ASC",
@@ -193,10 +194,11 @@ fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         status: TaskStatus::from_str(&row.get::<_, String>(4)?).unwrap_or(TaskStatus::Blocked),
         priority: row.get(5)?,
         sort_order: row.get(6)?,
-        assigned_to: row.get(7)?,
-        created_at: row.get(8)?,
-        updated_at: row.get(9)?,
-        started_at: row.get(10)?,
-        completed_at: row.get(11)?,
+        agent: row.get(7)?,
+        assigned_to: row.get(8)?,
+        created_at: row.get(9)?,
+        updated_at: row.get(10)?,
+        started_at: row.get(11)?,
+        completed_at: row.get(12)?,
     })
 }

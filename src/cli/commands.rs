@@ -124,6 +124,9 @@ pub enum TaskCommands {
         description: Option<String>,
         #[arg(long, default_value = "0")]
         priority: i32,
+        /// Agent to execute this task
+        #[arg(long)]
+        agent: Option<String>,
         /// Add dependency: task runs after this task ID
         #[arg(long)]
         after: Vec<String>,

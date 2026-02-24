@@ -203,6 +203,7 @@ struct TaskInput {
     description: Option<String>,
     #[serde(default)]
     priority: i32,
+    agent: Option<String>,
     #[serde(default)]
     after: Vec<String>,
     #[serde(default)]
@@ -260,7 +261,7 @@ fn run_load(json_output: bool) -> Result<i32, TaskaiError> {
             task_repo::create_task(
                 &conn, &task_id, &plan_id, &task_input.title,
                 task_input.description.as_deref(), task_input.priority,
-                i as i32, &status,
+                i as i32, &status, task_input.agent.as_deref(),
             )?;
 
             // Task documents

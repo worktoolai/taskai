@@ -25,6 +25,7 @@ pub fn run_migrations(conn: &Connection) -> Result<(), TaskaiError> {
                 CHECK (status IN ('blocked', 'ready', 'in_progress', 'done', 'cancelled', 'skipped')),
             priority INTEGER NOT NULL DEFAULT 0,
             sort_order INTEGER NOT NULL DEFAULT 0,
+            agent TEXT,
             assigned_to TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),

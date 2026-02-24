@@ -49,6 +49,7 @@ pub struct Task {
     pub status: TaskStatus,
     pub priority: i32,
     pub sort_order: i32,
+    pub agent: Option<String>,
     pub assigned_to: Option<String>,
     pub created_at: String,
     pub updated_at: String,

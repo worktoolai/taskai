@@ -28,6 +28,9 @@ pub fn print_task(t: &Task) {
     }
     println!("  Status: {}", t.status.as_str());
     println!("  Priority: {}", t.priority);
+    if let Some(ref agent) = t.agent {
+        println!("  Agent: {agent}");
+    }
     if let Some(ref assigned) = t.assigned_to {
         println!("  Assigned to: {assigned}");
     }
@@ -45,14 +48,22 @@ pub fn print_task_list(tasks: &[Task]) {
         return;
     }
     for t in tasks {
+        let agent_str = t.agent.as_deref().unwrap_or("");
         let assigned = t.assigned_to.as_deref().unwrap_or("");
+        let mut suffix = String::new();
+        if !agent_str.is_empty() {
+            suffix.push_str(&format!(" agent={agent_str}"));
+        }
+        if !assigned.is_empty() {
+            suffix.push_str(&format!(" @{assigned}"));
+        }
         println!(
-            "  [{}] {} ({}) p={} {}",
+            "  [{}] {} ({}) p={}{}",
             t.status.as_str(),
             t.title,
             &t.id[..std::cmp::min(8, t.id.len())],
             t.priority,
-            if assigned.is_empty() { String::new() } else { format!("@{assigned}") }
+            suffix
         );
     }
 }
