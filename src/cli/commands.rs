@@ -25,7 +25,14 @@ BEHAVIOR NOTES:
   `task fail` may return `blocked` (not `ready`) if deps were cancelled while in_progress.
   `task add --after <done-task>` starts as `ready` (dep already satisfied).
   `plan delete` of the active plan clears the active plan config.
-  Terminal states (`done`/`cancelled`/`skipped`) are immutable."
+  Terminal states (`done`/`cancelled`/`skipped`) are immutable.
+
+AGENT FIELD:
+  Tasks can have a pre-assigned `agent` field (who should execute) set at creation time.
+  This is separate from `assigned_to` (who actually claimed it at runtime).
+  Set via `task add --agent <name>` or `\"agent\"` key in `plan load` JSON.
+  The `next` command returns the `agent` field in JSON output so orchestrators can route tasks.
+  Use `next --claim --agent <name>` to set `assigned_to` when an agent picks up a task."
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -58,7 +65,8 @@ pub enum Commands {
 NOTE:
   Without --claim: read-only, returns the next ready task without changing state.
   With    --claim: atomically sets the task to in_progress (SQLite transaction).
-  Use --agent with --claim to record which agent owns the task.")]
+  Use --agent with --claim to record which agent owns the task (sets `assigned_to`).
+  JSON output includes the task's pre-assigned `agent` field for routing decisions.")]
     Next {
         /// Atomically claim the task (set to in_progress)
         #[arg(long)]
@@ -104,7 +112,16 @@ pub enum PlanCommands {
     /// Load plan from stdin JSON
     #[command(after_help = "\
 STDIN FORMAT:
-  {\"name\":\"slug\", \"title\":\"...\", \"tasks\":[{\"id\":\"t1\", \"title\":\"...\", \"after\":[...]}]}
+  {\"name\":\"slug\", \"title\":\"...\", \"tasks\":[{\"id\":\"t1\", \"title\":\"...\", \"agent\":\"...\", \"after\":[...]}]}
+
+TASK FIELDS:
+  id          (required) Temporary ID for dependency references
+  title       (required) Task title
+  description (optional) Task description
+  priority    (optional) Integer, default 0. Higher = picked first by `next`
+  agent       (optional) Pre-assigned agent name for task routing
+  after       (optional) List of task IDs this task depends on
+  documents   (optional) List of {title, content} attached to the task
 
 NOTE:
   Atomic: all-or-nothing. Validates cycles, duplicate IDs, unknown refs.
